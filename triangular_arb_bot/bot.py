@@ -92,21 +92,28 @@ def get_crypto_price(symbol: str) -> dict | None:
 
 def get_triangle_prices(triangle: tuple) -> dict | None:
     """
-    Fetch all 3 prices needed for a crypto triangle.
-    Triangle: (A, B, QUOTE) e.g. (BTC, ETH, USD)
-    Pairs:  A/QUOTE, B/QUOTE, A/B
+    Fetch A/USD and B/USD only — derive A/B cross rate mathematically.
+    Alpaca crypto only supports USD-quoted pairs.
     """
     a, b, quote = triangle
     sym_a_q = f"{a}/{quote}"   # e.g. BTC/USD
     sym_b_q = f"{b}/{quote}"   # e.g. ETH/USD
-    sym_a_b = f"{a}/{b}"       # e.g. BTC/ETH
 
     r1 = get_crypto_price(sym_a_q)
     r2 = get_crypto_price(sym_b_q)
-    r3 = get_crypto_price(sym_a_b)
 
-    if not all([r1, r2, r3]):
+    if not all([r1, r2]):
         return None
+
+    # Derive A/B cross rate from USD quotes
+    # BTC/ETH bid = BTC/USD bid / ETH/USD ask  (selling BTC, buying ETH)
+    # BTC/ETH ask = BTC/USD ask / ETH/USD bid  (buying BTC, selling ETH)
+    sym_a_b = f"{a}/{b}"
+    r3 = {
+        "bid": r1["bid"] / r2["ask"],
+        "ask": r1["ask"] / r2["bid"],
+        "mid": r1["mid"] / r2["mid"],
+    }
 
     return {
         sym_a_q: r1,

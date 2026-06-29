@@ -9,37 +9,17 @@ Uses Alpaca's paper/live trading API.
 import time
 import logging
 import requests
+from config import (
+    API_KEY, API_SECRET, PAPER, DRY_RUN,
+    TRADE_AMOUNT, FEE_RATE, MIN_PROFIT_PC,
+    SCAN_INTERVAL, TRIANGLES
+)
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s"
 )
 log = logging.getLogger(__name__)
-
-
-# ── Config ─────────────────────────────────────────────────────────────────────
-
-API_KEY       = "YOUR_ALPACA_API_KEY"
-API_SECRET    = "YOUR_ALPACA_SECRET_KEY"
-PAPER         = True    # True = paper trading (fake money), False = live
-
-TRADE_AMOUNT  = 1000    # USD per triangle cycle
-FEE_RATE      = 0.0     # Alpaca forex has no commission
-MIN_PROFIT_PC = 0.05    # minimum profit % to trigger trade (forex margins are tiny)
-DRY_RUN       = True    # True = simulate only, no real orders
-SCAN_INTERVAL = 2       # seconds between full scans
-
-# Triangles: (currency_A, currency_B, base_currency)
-# Each entry scans both directions automatically
-TRIANGLES = [
-    ("EUR", "GBP", "USD"),   # USD->EUR->GBP->USD
-    ("EUR", "JPY", "USD"),   # USD->EUR->JPY->USD
-    ("GBP", "JPY", "USD"),   # USD->GBP->JPY->USD
-    ("EUR", "CHF", "USD"),   # USD->EUR->CHF->USD
-    ("GBP", "CHF", "USD"),   # USD->GBP->CHF->USD
-    ("AUD", "JPY", "USD"),   # USD->AUD->JPY->USD
-    ("EUR", "AUD", "USD"),   # USD->EUR->AUD->USD
-]
 
 # Alpaca base URLs
 BASE_DATA = "https://data.alpaca.markets/v1beta3/forex/latest/rates"

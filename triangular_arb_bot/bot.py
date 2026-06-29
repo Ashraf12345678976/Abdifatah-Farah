@@ -22,7 +22,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 # Alpaca base URLs
-BASE_DATA = "https://data.alpaca.markets/v1beta3/forex/latest/rates"
+BASE_DATA        = "https://data.alpaca.markets/v1beta3/forex/snapshots"
 BASE_TRADE_PAPER = "https://paper-api.alpaca.markets/v2"
 BASE_TRADE_LIVE  = "https://api.alpaca.markets/v2"
 
@@ -61,23 +61,28 @@ def get_forex_rate(from_ccy: str, to_ccy: str) -> dict | None:
     Fetch live bid/ask from Alpaca forex data feed.
     Returns {"bid": float, "ask": float} or None.
     """
-    pair = f"{from_ccy}/{to_ccy}"
-    params = {"currency_pairs": pair}
+    pair = f"{from_ccy}{to_ccy}"   # Alpaca format: EURUSD (no slash)
+    params = {"symbols": pair}
     try:
         r = requests.get(BASE_DATA, headers=headers(), params=params, timeout=5)
         if r.status_code != 200:
             log.warning(f"Price fetch failed for {pair}: {r.status_code} {r.text}")
             return None
         data = r.json()
-        rates = data.get("rates", {})
-        if pair not in rates:
+        snapshots = data.get("snapshots", {})
+        if pair not in snapshots:
             log.warning(f"No rate returned for {pair}")
             return None
-        rate = rates[pair]
+        quote = snapshots[pair].get("latestQuote", {})
+        bid = float(quote.get("bp", 0))
+        ask = float(quote.get("ap", 0))
+        if bid == 0 or ask == 0:
+            log.warning(f"Zero price for {pair}")
+            return None
         return {
-            "bid": float(rate["bp"]),   # bid price
-            "ask": float(rate["ap"]),   # ask price
-            "mid": (float(rate["bp"]) + float(rate["ap"])) / 2,
+            "bid": bid,
+            "ask": ask,
+            "mid": (bid + ask) / 2,
         }
     except Exception as e:
         log.warning(f"Error fetching {pair}: {e}")
